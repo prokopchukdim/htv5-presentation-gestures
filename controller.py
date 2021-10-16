@@ -67,39 +67,44 @@ while True:
     is_left_fist = False
     is_right = False
     speed = 0
+    is_gesture = False
     
     # post process the result
     if results.multi_hand_landmarks:
         landmarks0 = []
         landmarks1 = []
 
+        #Cycle through detected hands
         for i in range(len(results.multi_hand_landmarks)):
+
+            #Classify current hand
             is_left = results.multi_handedness[i].classification[0].label == "Left"
             is_right = results.multi_handedness[i].classification[0].label == "Right"
 
             avgx = 0
             avgy = 0
-            #avgz = 0
-            
+
+            #Puts the coordinates of joints into a list readable by the model
             for lm in results.multi_hand_landmarks[i].landmark:
                 lmx = int(lm.x * x)
                 lmy = int(lm.y * y)
                 if is_right:
                     avgx += lm.x
                     avgy += lm.y
-                    #avgz += lm.z
                 
                 if i == 0:
                     landmarks0.append([lmx, lmy])
                 else:
                     landmarks1.append([lmx, lmy])
 
+
+            #draws joints
+                    
             #if(is_left):
 ##            mpDraw.draw_landmarks(frame, results.multi_hand_landmarks[i], mpHands.HAND_CONNECTIONS, landmark_drawing_spec = mpDraw.DrawingSpec(color=(0, 0, 0), thickness=2, circle_radius=2))
 
             
-
-            #detects control gesture
+            #detects control gesture based on whether hand 1 or hand 2 is being detected 
             if is_left and i == 0:
                 prediction = model.predict([landmarks0])
                 is_left_fist = classNames[np.argmax(prediction)] == 'fist'
@@ -107,52 +112,31 @@ while True:
                 prediction = model.predict([landmarks1])
                 is_left_fist = classNames[np.argmax(prediction)] == 'fist'
 
-
-##            if time.perf_counter() - timer < threshold:
-##                cv2.putText(frame, "Gesture! ", (10, 80), cv2.FONT_HERSHEY_PLAIN, 
-##                       1, (255,255,255), 2, cv2.LINE_AA)
-
             
-            #detects movement gesture
+            #detects movement gesture if threshold seconds have passed between the last gesture detection and the new one
             if(is_right and time.perf_counter() - timer >= threshold):
+
+                #finds speed of average point on hand
                 avgx = avgx / len(results.multi_hand_landmarks[i].landmark)
                 avgy = avgy / len(results.multi_hand_landmarks[i].landmark)
-                #avgz = avgz / len(results.multi_hand_landmarks[i].landmark)
-
                 if last_pos == [0,0]:
                     last_pos = [avgx,avgy]
                 dist_moved = math.sqrt(abs(avgx-last_pos[0])**2 + abs(avgy-last_pos[1])**2)
                 speed = dist_moved / frametime
 
-##                if i == 0:
-##                    prediction = model.predict([landmarks0])
-##                if i == 1:
-##                    prediction = model.predict([landmarks1])
-##
-##                prediction = classNames[np.argmax(prediction)]
-
-
-##                cv2.putText(frame, "Gesture! ", (10, 80), cv2.FONT_HERSHEY_PLAIN, 
-##                       1, (255,255,255), 2, cv2.LINE_AA)
-                
-                #is_right_gesture = prediction == 'stop' or prediction == 'live long'
-
-##                if speed >= 1:
-##                    cv2.putText(frame, "Gesture! ", (10, 80), cv2.FONT_HERSHEY_PLAIN, 
-##                       1, (255,255,255), 2, cv2.LINE_AA)
-##                    print("Gesture")
-##                    timer = time.perf_counter()
-                
+                #If the speed is over 1, then the user is making a movement gesture
+                if speed >= 1:
+                    is_gesture = True
+                    timer = time.perf_counter()               
                 last_pos = [avgx,avgy]
     else:
         last_pos == [0,0]
 
-    # draw text on frame
-
+    #Trigger the if statements if both the control and movement gesture are up.
     if is_left_fist:
-        if(is_right and speed >= 1):
-           print("Gesture")
-           timer = time.perf_counter()
+        if(is_gesture):
+           print("Gesture with control")
+##           timer = time.perf_counter()
         
         cv2.putText(frame, "Control", (10, 40), cv2.FONT_HERSHEY_PLAIN, 
                    1, (255,255,255), 2, cv2.LINE_AA)
