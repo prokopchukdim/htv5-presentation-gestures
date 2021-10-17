@@ -11,3 +11,5 @@ Windows allows only one application to use the camera at a time. Since the scrip
 # Requirements
 The project was written in Python 3.8.10, and requires the following packages to be installed: OpenCV 2, NumPy, MediaPipe, Tensorflow, pynput, pyvirtualcam (with Unity Capture, see https://github.com/letmaik/pyvirtualcam for details).
 
+Unity Capture can be installed and uninstalled from the Unity-Capture-master.zip folder (We do not own this work!). 
+The project itself can be run from controller.py
